@@ -1,0 +1,11 @@
+# Bỏ qua node_modules của các thư mục
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Bỏ qua thư mục build
+client/dist/
+
+# Bỏ qua file môi trường / cấu hình nhạy cảm
+.env
+.DS_Store
