@@ -8,7 +8,7 @@ import OrdersTab from './components/OrdersTab';
 import ReturnsTab from './components/ReturnsTab';
 import ProductsTab from './components/ProductsTab';
 import LoginForm from './components/LoginForm';
-
+import api from './services/api';
 import CreateOrderModal from './components/modals/CreateOrderModal';
 import ReturnReasonModal from './components/modals/ReturnReasonModal';
 import ReturnReceiptModal from './components/modals/ReturnReceiptModal';
@@ -16,7 +16,7 @@ import AddProductModal from './components/modals/AddProductModal';
 
 import { getLocalDateString } from './utils/dateUtils';
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://116.118.6.150:5000/api';
 
 export default function App() {
   // Trạng thái Người dùng Đăng nhập (Lấy từ localStorage)

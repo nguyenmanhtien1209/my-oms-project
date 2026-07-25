@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Lock, User, LogIn, ShieldCheck } from 'lucide-react';
-
+import api from '../services/api';
 export default function LoginForm({ onLoginSuccess }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -13,11 +13,7 @@ export default function LoginForm({ onLoginSuccess }) {
     setLoading(true);
 
     try {
-      const res = await fetch('http://localhost:5000/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
+      const res = await api.post('/login', { username, password });
 
       const data = await res.json();
 

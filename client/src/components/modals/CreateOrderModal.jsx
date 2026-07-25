@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Plus } from 'lucide-react';
 import AddProductModal from './AddProductModal';
-
+import api from '../../services/api';
 export default function CreateOrderModal({ isOpen, onClose, fetchAllData }) {
   const [productsList, setProductsList] = useState([]);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
@@ -24,7 +24,7 @@ export default function CreateOrderModal({ isOpen, onClose, fetchAllData }) {
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/products');
+      const res = await api.get('/products');
       setProductsList(res.data);
     } catch (err) {
       console.error('Lỗi lấy danh sách sản phẩm:', err);
@@ -80,7 +80,7 @@ export default function CreateOrderModal({ isOpen, onClose, fetchAllData }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/api/orders', formData);
+      await api.post('/orders', formData);
       fetchAllData();
       onClose();
     } catch (err) {

@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { Plus, Search, Trash2, Package } from 'lucide-react';
 import axios from 'axios';
-
+import api from '../services/api';
 export default function ProductsTab({ products, fetchProducts, setIsAddProductOpen }) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const handleDelete = async (id, name) => {
     if (window.confirm(`Bạn có chắc muốn xóa sản phẩm "${name}" khỏi danh mục?`)) {
       try {
-        await axios.delete(`http://localhost:5000/api/products/${id}`);
+        await api.delete(`/products/${id}`);
         fetchProducts();
       } catch (err) {
         alert('Lỗi khi xóa sản phẩm!');

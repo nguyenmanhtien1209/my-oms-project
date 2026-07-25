@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-
+import api from '../../services/api';
 export default function AddProductModal({ isOpen, onClose, onProductAdded }) {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
@@ -10,7 +10,7 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/api/products', {
+      await api.post('/products', {
         name,
         price: Number(price)
       });
