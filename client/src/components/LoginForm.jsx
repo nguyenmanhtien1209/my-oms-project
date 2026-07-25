@@ -15,7 +15,7 @@ export default function LoginForm({ onLoginSuccess }) {
     try {
       const res = await api.post('/login', { username, password });
 
-      const data = await res.json();
+      const data = res.json();
 
       if (!res.ok) {
         throw new Error(data.error || 'Đăng nhập thất bại');
