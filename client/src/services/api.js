@@ -1,6 +1,6 @@
 // src/services/api.js
 import axios from 'axios';
-// update: 26/07/2026
+// update: 26/07/2026 test code
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 const api = axios.create({
