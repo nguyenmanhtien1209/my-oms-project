@@ -47,7 +47,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
     return matchesSearch && matchesStatus && matchesMonth;
   });
 
-  // 2. XỬ LÝ ĐỔI TRẠNG THÁI (ĐÃ CẬP NHẬT LOGIC ĐƠN ĐỔI)
+  // 2. XỬ LÝ ĐỔI TRẠNG THÁI (ĐÃ FIX LỖI MYSQL STRICT MODE)
   const handleUpdateStatus = async (order, newStatus) => {
     // Nếu chọn Trả hàng, Bom HOẶC Đơn đổi -> Kích hoạt Modal để đưa đơn sang bảng Hoàn/Bom
     if (
@@ -60,9 +60,12 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
     }
 
     try {
-      const deliveredDate = newStatus === 'Đã giao thành công' 
-        ? (order.deliveredDate || new Date().toISOString().split('T')[0]) 
-        : order.deliveredDate;
+      // Chuẩn hóa deliveredDate: truyền null nếu không có ngày (tránh undefined gây lỗi 500)
+      let deliveredDate = order.deliveredDate || order.delivered_date || null;
+
+      if (newStatus === 'Đã giao thành công') {
+        deliveredDate = deliveredDate || new Date().toISOString().split('T')[0];
+      }
 
       await api.put(`/orders/${order.id}`, { status: newStatus, deliveredDate });
 
@@ -82,10 +85,11 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
     }
   };
 
-  // 3. CẬP NHẬT NGÀY THÁNG
+  // 3. CẬP NHẬT NGÀY THÁNG (ĐÃ TỐI ƯU TRÁNH LỖI ĐỊNH DẠNG NGÀY)
   const handleUpdateDates = async (id, field, value) => {
     try {
-      const payload = field === 'createdDate' ? { createdDate: value } : { deliveredDate: value };
+      const formattedValue = value ? value : null;
+      const payload = field === 'createdDate' ? { createdDate: formattedValue } : { deliveredDate: formattedValue };
       await api.put(`/orders/${id}`, payload);
       fetchAllData();
     } catch (err) {
