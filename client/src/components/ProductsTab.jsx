@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Plus, Search, Trash2, Package } from 'lucide-react';
-import axios from 'axios';
 import api from '../services/api';
 export default function ProductsTab({ products, fetchProducts, setIsAddProductOpen }) {
   const [searchTerm, setSearchTerm] = useState('');

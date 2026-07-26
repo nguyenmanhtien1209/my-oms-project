@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Lock, User, LogIn, ShieldCheck } from 'lucide-react';
 import api from '../services/api';
+
 export default function LoginForm({ onLoginSuccess }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -11,21 +12,21 @@ export default function LoginForm({ onLoginSuccess }) {
     e.preventDefault();
     setError('');
     setLoading(true);
-// test code 07
+
     try {
+      // Axios trả về dữ liệu trực tiếp trong res.data
       const res = await api.post('/login', { username, password });
-
-      const data = res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Đăng nhập thất bại');
-      }
+      const data = res.data;
 
       // Lưu thông tin người dùng vào localStorage
       localStorage.setItem('oms_user', JSON.stringify(data.user));
       onLoginSuccess(data.user);
     } catch (err) {
-      setError(err.message);
+      // Axios tự động nhảy vào catch nếu API trả về mã lỗi (400, 401, 500,...)
+      const errorMessage = err.response?.data?.error 
+        || err.response?.data?.message 
+        || 'Đăng nhập thất bại. Vui lòng thử lại!';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -38,7 +39,7 @@ export default function LoginForm({ onLoginSuccess }) {
           <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto">
             <ShieldCheck size={28} />
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">Đăng Nhập Hệ Thống OMS</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Đăng Nhập</h1>
           <p className="text-xs text-gray-500">Nhập tài khoản để tiếp tục truy cập dữ liệu</p>
         </div>
 
@@ -58,7 +59,7 @@ export default function LoginForm({ onLoginSuccess }) {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Ví dụ: admin"
+                placeholder="Tài khoản"
                 className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -87,10 +88,6 @@ export default function LoginForm({ onLoginSuccess }) {
             {loading ? 'Đang xử lý...' : <><LogIn size={16} /> Đăng Nhập</>}
           </button>
         </form>
-
-        <div className="text-center pt-2 border-t border-gray-100">
-          <p className="text-[11px] text-gray-400">Tài khoản mặc định: <span className="font-mono text-gray-600">admin</span> / Mật khẩu: <span className="font-mono text-gray-600">123456</span></p>
-        </div>
       </div>
     </div>
   );

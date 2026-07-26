@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Search, RefreshCw, Calendar, Trash2, Edit3, X } from 'lucide-react';
-import axios from 'axios';
 import api from '../services/api';
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal, fetchAllData }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -66,7 +64,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
         ? (order.deliveredDate || new Date().toISOString().split('T')[0]) 
         : order.deliveredDate;
 
-      await axios.put(`${API_BASE}/orders/${order.id}`, { status: newStatus, deliveredDate });
+      await api.put(`/orders/${order.id}`, { status: newStatus, deliveredDate });
 
       // Nếu chuyển từ Hoàn/Bom/Đổi về trạng thái thường -> Xóa thông tin đơn hoàn
       if (
@@ -75,7 +73,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
         order.status === 'Đơn đổi'
       ) {
         try {
-          await axios.delete(`${API_BASE}/returns/by-order/${order.id}`);
+          await api.delete(`/returns/by-order/${order.id}`);
         } catch (e) {}
       }
       fetchAllData();
@@ -88,7 +86,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
   const handleUpdateDates = async (id, field, value) => {
     try {
       const payload = field === 'createdDate' ? { createdDate: value } : { deliveredDate: value };
-      await axios.put(`${API_BASE}/orders/${id}`, payload);
+      await api.put(`/orders/${id}`, payload);
       fetchAllData();
     } catch (err) {
       alert('Lỗi cập nhật ngày!');
@@ -98,7 +96,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
   // 4. CẬP NHẬT ĐƠN GIÁ BÁN TRỰC TIẾP TRÊN BẢNG
   const handleUpdateSellingPrice = async (id, newPrice) => {
     try {
-      await axios.put(`${API_BASE}/orders/${id}`, { sellingPrice: Number(newPrice || 0) });
+      await api.put(`/orders/${id}`, { sellingPrice: Number(newPrice || 0) });
       fetchAllData();
     } catch (err) {
       alert('Lỗi cập nhật giá bán!');
@@ -114,7 +112,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
   // 6. LƯU CHỈNH SỬA TỪ MODAL
   const handleSaveEdit = async () => {
     try {
-      await axios.put(`${API_BASE}/orders/${editingOrder.id}`, editFormData);
+      await api.put(`/orders/${editingOrder.id}`, editFormData);
       setEditingOrder(null);
       fetchAllData();
     } catch (err) {
@@ -126,10 +124,10 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
   const handleDeleteOrder = async (orderId) => {
     if (window.confirm(`Bạn có chắc chắn muốn xóa đơn hàng ${orderId}?`)) {
       try {
-        await axios.delete(`${API_BASE}/orders/${orderId}`);
+        await api.delete(`/orders/${orderId}`);
         // Đồng thời xóa đơn hoàn liên quan nếu có
         try {
-          await axios.delete(`${API_BASE}/returns/by-order/${orderId}`);
+          await api.delete(`/returns/by-order/${orderId}`);
         } catch (e) {}
         fetchAllData();
       } catch (err) {
