@@ -47,9 +47,8 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
     return matchesSearch && matchesStatus && matchesMonth;
   });
 
-  // 2. XỬ LÝ ĐỔI TRẠNG THÁI (ĐÃ FIX LỖI MYSQL STRICT MODE)
+  // 2. XỬ LÝ ĐỔI TRẠNG THÁI
   const handleUpdateStatus = async (order, newStatus) => {
-    // Nếu chọn Trả hàng, Bom HOẶC Đơn đổi -> Kích hoạt Modal để đưa đơn sang bảng Hoàn/Bom
     if (
       newStatus === 'Trả hàng/Hoàn tiền' || 
       newStatus === 'Giao hàng không thành công' || 
@@ -60,7 +59,6 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
     }
 
     try {
-      // Chuẩn hóa deliveredDate: truyền null nếu không có ngày (tránh undefined gây lỗi 500)
       let deliveredDate = order.deliveredDate || order.delivered_date || null;
 
       if (newStatus === 'Đã giao thành công') {
@@ -69,7 +67,6 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
 
       await api.put(`/orders/${order.id}`, { status: newStatus, deliveredDate });
 
-      // Nếu chuyển từ Hoàn/Bom/Đổi về trạng thái thường -> Xóa thông tin đơn hoàn
       if (
         order.status === 'Giao hàng không thành công' || 
         order.status === 'Trả hàng/Hoàn tiền' || 
@@ -85,7 +82,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
     }
   };
 
-  // 3. CẬP NHẬT NGÀY THÁNG (ĐÃ TỐI ƯU TRÁNH LỖI ĐỊNH DẠNG NGÀY)
+  // 3. CẬP NHẬT NGÀY THÁNG
   const handleUpdateDates = async (id, field, value) => {
     try {
       const formattedValue = value ? value : null;
@@ -97,7 +94,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
     }
   };
 
-  // 4. CẬP NHẬT ĐƠN GIÁ BÁN TRỰC TIẾP TRÊN BẢNG
+  // 4. CẬP NHẬT ĐƠN GIÁ BÁN TRỰC TIẾP
   const handleUpdateSellingPrice = async (id, newPrice) => {
     try {
       await api.put(`/orders/${id}`, { sellingPrice: Number(newPrice || 0) });
@@ -129,7 +126,6 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
     if (window.confirm(`Bạn có chắc chắn muốn xóa đơn hàng ${orderId}?`)) {
       try {
         await api.delete(`/orders/${orderId}`);
-        // Đồng thời xóa đơn hoàn liên quan nếu có
         try {
           await api.delete(`/returns/by-order/${orderId}`);
         } catch (e) {}
@@ -143,16 +139,16 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
   return (
     <div className="space-y-4">
       {/* HEADER TỔNG CÔNG CỤ */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Danh Sách Đơn Bán Hàng</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Danh Sách Đơn Bán Hàng</h1>
           <p className="text-xs text-gray-500">Quản lý và cập nhật tiến độ giao hàng toàn hệ thống.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           {fetchAllData && (
             <button 
               onClick={fetchAllData} 
-              className="p-2 border rounded-lg bg-white hover:bg-gray-50 text-gray-600 shadow-sm"
+              className="p-2 border rounded-lg bg-white hover:bg-gray-50 text-gray-600 shadow-sm shrink-0"
               title="Làm mới dữ liệu"
             >
               <RefreshCw size={16} />
@@ -160,19 +156,20 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
           )}
           <button 
             onClick={onOpenCreateModal}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow"
+            className="flex-1 sm:flex-none justify-center bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-2 shadow transition"
           >
-            <Plus size={18} /> Tạo Đơn Thủ Công
+            <Plus size={16} /> Tạo Đơn Thủ Công
           </button>
         </div>
       </div>
 
-      {/* BỘ LỌC */}
+      {/* BỘ LỌC RESPONSIVE */}
       <div className="flex flex-col lg:flex-row gap-3 justify-between items-stretch lg:items-center bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
-        <div className="flex gap-1.5 overflow-x-auto pb-1 lg:pb-0">
+        {/* Nút lọc trạng thái (Cuộn ngang linh hoạt trên mobile) */}
+        <div className="flex gap-1.5 overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
           <button 
             onClick={() => setStatusFilter('ALL')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition ${
               statusFilter === 'ALL' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -180,7 +177,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
           </button>
           <button 
             onClick={() => setStatusFilter('SUCCESS')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition ${
               statusFilter === 'SUCCESS' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -188,7 +185,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
           </button>
           <button 
             onClick={() => setStatusFilter('DELIVERING')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition ${
               statusFilter === 'DELIVERING' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -196,7 +193,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
           </button>
           <button 
             onClick={() => setStatusFilter('EXCHANGE')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition ${
               statusFilter === 'EXCHANGE' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -204,7 +201,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
           </button>
           <button 
             onClick={() => setStatusFilter('RETURNED')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition ${
               statusFilter === 'RETURNED' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -212,16 +209,19 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
           </button>
         </div>
 
+        {/* Ô Tìm kiếm & Chọn tháng */}
         <div className="flex flex-col sm:flex-row gap-2">
-          <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-300 rounded-lg px-2.5 py-1">
-            <Calendar size={15} className="text-gray-500" />
-            <span className="text-xs font-medium text-gray-600 whitespace-nowrap">Tháng:</span>
-            <input 
-              type="month" 
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="bg-transparent text-xs font-semibold text-gray-700 focus:outline-none cursor-pointer"
-            />
+          <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-gray-50 border border-gray-300 rounded-lg px-2.5 py-1.5">
+            <div className="flex items-center gap-1.5">
+              <Calendar size={15} className="text-gray-500 shrink-0" />
+              <span className="text-xs font-medium text-gray-600 whitespace-nowrap">Tháng:</span>
+              <input 
+                type="month" 
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="bg-transparent text-xs font-semibold text-gray-700 focus:outline-none cursor-pointer"
+              />
+            </div>
             {selectedMonth && (
               <button 
                 onClick={() => setSelectedMonth('')} 
@@ -237,7 +237,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input 
               type="text" 
-              placeholder="Tìm theo mã đơn, khách, SĐT..." 
+              placeholder="Tìm mã đơn, khách, SĐT..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -246,12 +246,128 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
         </div>
       </div>
 
-      {/* BẢNG DỮ LIỆU ĐƠN HÀNG */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <table className="w-full text-left text-sm">
+      {/* ==================== 1. GIAO DIỆN CARD DÀNH CHO ĐIỆN THOẠI (HIỆN KHI < md) ==================== */}
+      <div className="block md:hidden space-y-3">
+        {filteredOrders.length > 0 ? (
+          filteredOrders.map((o) => (
+            <div key={o.id} className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm space-y-2.5">
+              {/* Mã đơn + Sàn + Nút Hành động */}
+              <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-blue-600 text-xs">#{o.id}</span>
+                  <span className="text-[10px] bg-gray-100 text-gray-700 font-semibold px-2 py-0.5 rounded">
+                    {o.platform}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button 
+                    onClick={() => handleOpenEditModal(o)}
+                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                    title="Sửa"
+                  >
+                    <Edit3 size={15} />
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteOrder(o.id)}
+                    className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition"
+                    title="Xóa"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Thông tin Khách & Sản phẩm */}
+              <div className="text-xs space-y-1">
+                <div className="flex justify-between font-semibold text-gray-800">
+                  <span>{o.customer}</span>
+                  <span className="text-gray-500 font-normal">{o.phone}</span>
+                </div>
+                <div className="text-gray-600 flex justify-between">
+                  <span className="truncate max-w-[200px]">{o.product}</span>
+                  <span className="font-semibold text-gray-500">x{o.quantity}</span>
+                </div>
+              </div>
+
+              {/* Ô Nhập Đơn Giá Bán & Tổng Tiền Gốc */}
+              <div className="grid grid-cols-2 gap-2 bg-gray-50 p-2 rounded-lg text-xs">
+                <div>
+                  <span className="text-[10px] text-gray-500 block mb-0.5">Giá Bán (đ):</span>
+                  <input 
+                    type="number"
+                    defaultValue={o.sellingPrice ?? o.selling_price ?? 0}
+                    onBlur={(e) => handleUpdateSellingPrice(o.id, e.target.value)}
+                    className="w-full border border-blue-300 rounded px-2 py-1 text-xs font-bold text-blue-700 bg-white focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <span className="text-[10px] text-gray-500 block mb-0.5">Tổng Tiền Gốc:</span>
+                  <div className="font-bold text-gray-800 py-1">
+                    {Number(o.amount || 0).toLocaleString()} đ
+                  </div>
+                </div>
+              </div>
+
+              {/* Trạng thái đơn hàng */}
+              <div>
+                <span className="text-[10px] text-gray-500 block mb-0.5">Trạng Thái:</span>
+                <select 
+                  value={o.status}
+                  onChange={(e) => handleUpdateStatus(o, e.target.value)}
+                  className={`w-full border rounded-lg p-2 text-xs font-semibold focus:outline-none ${
+                    o.status === 'Đã giao thành công' ? 'bg-green-50 text-green-700 border-green-200' :
+                    o.status === 'Đơn đổi' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                    o.status === 'Giao hàng không thành công' || o.status === 'Trả hàng/Hoàn tiền' ? 'bg-red-50 text-red-700 border-red-200' :
+                    o.status === 'Đã hủy' ? 'bg-gray-100 text-gray-500 border-gray-300' :
+                    'bg-blue-50 text-blue-700 border-blue-200'
+                  }`}
+                >
+                  <option value="Mới tạo">Mới tạo</option>
+                  <option value="Đang giao hàng">Đang giao hàng</option>
+                  <option value="Đã giao thành công">Đã giao thành công</option>
+                  <option value="Đơn đổi">Đơn đổi</option>
+                  <option value="Giao hàng không thành công">Giao hàng không thành công (Bom)</option>
+                  <option value="Trả hàng/Hoàn tiền">Trả hàng/Hoàn tiền</option>
+                  <option value="Đã hủy">Đã hủy</option>
+                </select>
+              </div>
+
+              {/* Ngày tạo & Ngày giao */}
+              <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                <div>
+                  <span className="text-gray-400 block">Ngày tạo:</span>
+                  <input 
+                    type="date" 
+                    value={o.createdDate || o.created_date || ''} 
+                    onChange={(e) => handleUpdateDates(o.id, 'createdDate', e.target.value)}
+                    className="w-full border border-gray-200 rounded px-1.5 py-1 text-xs bg-white"
+                  />
+                </div>
+                <div>
+                  <span className="text-gray-400 block">Ngày giao:</span>
+                  <input 
+                    type="date" 
+                    value={o.deliveredDate || o.delivered_date || ''} 
+                    onChange={(e) => handleUpdateDates(o.id, 'deliveredDate', e.target.value)}
+                    className="w-full border border-gray-200 rounded px-1.5 py-1 text-xs bg-white"
+                  />
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="bg-white p-6 rounded-xl border text-center text-gray-400 text-xs italic">
+            Không tìm thấy đơn hàng nào trong tháng/bộ lọc đã chọn.
+          </div>
+        )}
+      </div>
+
+      {/* ==================== 2. GIAO DIỆN BẢNG DÀNH CHO MÁY TÍNH (HIỆN KHI >= md) ==================== */}
+      <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-x-auto">
+        <table className="w-full text-left text-sm min-w-[950px]">
           <thead className="bg-gray-50 border-b text-gray-500 font-medium text-xs">
             <tr>
-              <th className="p-4">Mã Đơn / Mã Vận Đơn</th>
+              <th className="p-4">Mã Đơn / Vận Đơn</th>
               <th className="p-4">Sàn TMĐT</th>
               <th className="p-4">Khách Hàng</th>
               <th className="p-4">Sản Phẩm</th>
@@ -328,7 +444,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
                     />
                   </td>
 
-                  {/* CỘT HÀNH ĐỘNG (SỬA & XÓA) */}
+                  {/* CỘT HÀNH ĐỘNG */}
                   <td className="p-4 text-center">
                     <div className="flex items-center justify-center gap-1.5">
                       <button 
@@ -360,10 +476,10 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
         </table>
       </div>
 
-      {/* MODAL CHỈNH SỬA CHI TIẾT ĐƠN HÀNG */}
+      {/* MODAL CHỈNH SỬA CHI TIẾT ĐƠN HÀNG (Hỗ trợ cuộn trên Mobile) */}
       {editingOrder && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl relative">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-3 sm:p-4 z-50">
+          <div className="bg-white rounded-xl max-w-md w-full p-5 sm:p-6 shadow-xl relative max-h-[90vh] overflow-y-auto">
             <button 
               onClick={() => setEditingOrder(null)}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
@@ -371,7 +487,9 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
               <X size={20} />
             </button>
 
-            <h2 className="text-lg font-bold mb-4 text-gray-800">Sửa Đơn Hàng: {editingOrder.id}</h2>
+            <h2 className="text-base sm:text-lg font-bold mb-4 text-gray-800">
+              Sửa Đơn Hàng: <span className="text-blue-600">{editingOrder.id}</span>
+            </h2>
 
             <div className="space-y-3 text-xs">
               <div>

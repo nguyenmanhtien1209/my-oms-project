@@ -1,4 +1,4 @@
-// test code 07
+// test code 07 - Optimized for Mobile & Desktop Responsive
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { RefreshCw, LogOut, User } from 'lucide-react';
@@ -201,17 +201,17 @@ export default function App() {
   // 2. NẾU ĐANG TẢI DỮ LIỆU SANG TRANG QUẢN TRỊ
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <div className="flex items-center gap-3 text-lg font-semibold text-gray-600">
+      <div className="flex h-screen items-center justify-center bg-gray-50 px-4">
+        <div className="flex items-center gap-3 text-base sm:text-lg font-semibold text-gray-600">
           <RefreshCw className="animate-spin text-blue-600" /> Đang tải dữ liệu...
         </div>
       </div>
     );
   }
 
-  // 3. GIAO DIỆN QUẢN TRỊ KHI ĐÃ ĐĂNG NHẬP THÀNH CÔNG
+  // 3. GIAO DIỆN QUẢN TRỊ KHI ĐÃ ĐĂNG NHẬP THÀNH CÔNG (Tối ưu Flex-Col trên Mobile & Flex-Row trên PC)
   return (
-    <div className="flex h-screen bg-gray-100 text-gray-800">
+    <div className="flex flex-col md:flex-row min-h-screen md:h-screen bg-gray-100 text-gray-800">
       {/* SIDEBAR TÍCH HỢP 4 TAB */}
       <Sidebar 
         activeTab={activeTab} 
@@ -222,34 +222,38 @@ export default function App() {
       />
 
       {/* MAIN CONTENT AREA */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+      <main className="flex-1 flex flex-col min-w-0 md:h-screen overflow-hidden">
         {/* HEADER BẢO MẬT & ĐĂNG XUẤT */}
-        <header className="bg-white border-b border-gray-200 px-8 py-3.5 flex justify-between items-center shadow-sm shrink-0">
+        <header className="bg-white border-b border-gray-200 px-3.5 sm:px-8 py-2.5 sm:py-3.5 flex justify-between items-center shadow-sm shrink-0 gap-2">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></span>
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Hệ thống quản lý đơn hàng
+            <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shrink-0"></span>
+            <span className="text-[11px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider truncate">
+              <span className="hidden sm:inline">Hệ thống </span>Quản lý đơn hàng
             </span>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-xs font-semibold text-gray-700 bg-gray-100 px-3 py-1.5 rounded-lg">
-              <User size={15} className="text-blue-600" />
-              <span>Xin chào, <strong className="text-gray-900">{currentUser.name || currentUser.username}</strong></span>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-semibold text-gray-700 bg-gray-100 px-2 sm:px-3 py-1.5 rounded-lg">
+              <User size={14} className="text-blue-600 shrink-0" />
+              <span className="truncate max-w-[100px] sm:max-w-none">
+                <span className="hidden sm:inline">Xin chào, </span>
+                <strong className="text-gray-900">{currentUser.name || currentUser.username}</strong>
+              </span>
             </div>
 
             <button
               onClick={handleLogout}
-              className="px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-lg hover:bg-rose-100 flex items-center gap-1.5 transition shadow-sm"
+              className="px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-lg hover:bg-rose-100 flex items-center gap-1 sm:gap-1.5 transition shadow-sm shrink-0"
               title="Đăng xuất khỏi hệ thống"
             >
-              <LogOut size={14} /> Đăng xuất
+              <LogOut size={14} /> 
+              <span className="hidden sm:inline">Đăng xuất</span>
             </button>
           </div>
         </header>
 
-        {/* NỘI DUNG TABS */}
-        <div className="flex-1 overflow-y-auto p-8">
+        {/* NỘI DUNG TABS (Tối ưu Padding: p-3 trên điện thoại, p-8 trên máy tính) */}
+        <div className="flex-1 overflow-y-auto p-3 sm:p-6 md:p-8">
           {activeTab === 'dashboard' && <DashboardTab orders={orders} returns={returns} setActiveTab={setActiveTab} />}
           
           {activeTab === 'orders' && (
