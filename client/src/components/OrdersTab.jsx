@@ -2,6 +2,17 @@ import React, { useState } from 'react';
 import { Plus, Search, RefreshCw, Calendar, Trash2, Edit3, X } from 'lucide-react';
 import api from '../services/api';
 
+// Hàm chuẩn hóa ngày an toàn: Chuyển về đúng dạng "YYYY-MM-DD" cho input type="date"
+const safeDateFormat = (dateVal) => {
+  if (!dateVal) return '';
+  if (typeof dateVal === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateVal)) {
+    return dateVal;
+  }
+  const d = new Date(dateVal);
+  if (isNaN(d.getTime())) return '';
+  return d.toISOString().split('T')[0];
+};
+
 export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal, fetchAllData }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -9,6 +20,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
   // State cho Modal Sửa đơn hàng
   const [editingOrder, setEditingOrder] = useState(null);
   const [editFormData, setEditFormData] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
@@ -40,7 +52,8 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
 
     let matchesMonth = true;
     if (selectedMonth) {
-      const orderMonth = o.createdDate ? String(o.createdDate).substring(0, 7) : '';
+      const createdDateVal = safeDateFormat(o.createdDate || o.created_date);
+      const orderMonth = createdDateVal ? createdDateVal.substring(0, 7) : '';
       matchesMonth = orderMonth === selectedMonth;
     }
 
@@ -59,7 +72,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
     }
 
     try {
-      let deliveredDate = order.deliveredDate || order.delivered_date || null;
+      let deliveredDate = safeDateFormat(order.deliveredDate || order.delivered_date) || null;
 
       if (newStatus === 'Đã giao thành công') {
         deliveredDate = deliveredDate || new Date().toISOString().split('T')[0];
@@ -78,6 +91,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
       }
       fetchAllData();
     } catch (err) {
+      console.error('Lỗi cập nhật trạng thái:', err);
       alert('Lỗi cập nhật trạng thái!');
     }
   };
@@ -85,11 +99,12 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
   // 3. CẬP NHẬT NGÀY THÁNG
   const handleUpdateDates = async (id, field, value) => {
     try {
-      const formattedValue = value ? value : null;
+      const formattedValue = safeDateFormat(value) || null;
       const payload = field === 'createdDate' ? { createdDate: formattedValue } : { deliveredDate: formattedValue };
       await api.put(`/orders/${id}`, payload);
       fetchAllData();
     } catch (err) {
+      console.error('Lỗi cập nhật ngày:', err);
       alert('Lỗi cập nhật ngày!');
     }
   };
@@ -100,6 +115,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
       await api.put(`/orders/${id}`, { sellingPrice: Number(newPrice || 0) });
       fetchAllData();
     } catch (err) {
+      console.error('Lỗi cập nhật giá bán:', err);
       alert('Lỗi cập nhật giá bán!');
     }
   };
@@ -107,17 +123,40 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
   // 5. MỞ MODAL SỬA
   const handleOpenEditModal = (order) => {
     setEditingOrder(order);
-    setEditFormData({ ...order });
+    setEditFormData({ 
+      ...order,
+      createdDate: safeDateFormat(order.createdDate || order.created_date),
+      deliveredDate: safeDateFormat(order.deliveredDate || order.delivered_date)
+    });
   };
 
-  // 6. LƯU CHỈNH SỬA TỪ MODAL
+  // 6. LƯU CHỈNH SỬA TỪ MODAL (Đã làm sạch dữ liệu tránh lỗi 500)
   const handleSaveEdit = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
     try {
-      await api.put(`/orders/${editingOrder.id}`, editFormData);
+      const payload = {
+        ...editFormData,
+        customer: editFormData.customer ? editFormData.customer.trim() : '',
+        phone: editFormData.phone ? editFormData.phone.trim() : '',
+        product: editFormData.product ? editFormData.product.trim() : '',
+        quantity: Number(editFormData.quantity) || 1,
+        sellingPrice: Number(editFormData.sellingPrice ?? editFormData.selling_price ?? 0),
+        amount: Number(editFormData.amount) || 0,
+        createdDate: safeDateFormat(editFormData.createdDate) || null,
+        deliveredDate: safeDateFormat(editFormData.deliveredDate) || null
+      };
+
+      await api.put(`/orders/${editingOrder.id}`, payload);
       setEditingOrder(null);
       fetchAllData();
     } catch (err) {
-      alert('Lỗi khi lưu chỉnh sửa!');
+      console.error('Lỗi khi lưu chỉnh sửa:', err);
+      const serverMsg = err.response?.data?.message || err.response?.data?.error;
+      alert(serverMsg ? `Lỗi: ${serverMsg}` : 'Lỗi khi lưu chỉnh sửa!');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -131,6 +170,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
         } catch (e) {}
         fetchAllData();
       } catch (err) {
+        console.error('Lỗi khi xóa đơn hàng:', err);
         alert('Lỗi khi xóa đơn hàng!');
       }
     }
@@ -165,7 +205,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
 
       {/* BỘ LỌC RESPONSIVE */}
       <div className="flex flex-col lg:flex-row gap-3 justify-between items-stretch lg:items-center bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
-        {/* Nút lọc trạng thái (Cuộn ngang linh hoạt trên mobile) */}
+        {/* Nút lọc trạng thái */}
         <div className="flex gap-1.5 overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
           <button 
             onClick={() => setStatusFilter('ALL')}
@@ -338,7 +378,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
                   <span className="text-gray-400 block">Ngày tạo:</span>
                   <input 
                     type="date" 
-                    value={o.createdDate || o.created_date || ''} 
+                    value={safeDateFormat(o.createdDate || o.created_date)} 
                     onChange={(e) => handleUpdateDates(o.id, 'createdDate', e.target.value)}
                     className="w-full border border-gray-200 rounded px-1.5 py-1 text-xs bg-white"
                   />
@@ -347,7 +387,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
                   <span className="text-gray-400 block">Ngày giao:</span>
                   <input 
                     type="date" 
-                    value={o.deliveredDate || o.delivered_date || ''} 
+                    value={safeDateFormat(o.deliveredDate || o.delivered_date)} 
                     onChange={(e) => handleUpdateDates(o.id, 'deliveredDate', e.target.value)}
                     className="w-full border border-gray-200 rounded px-1.5 py-1 text-xs bg-white"
                   />
@@ -430,7 +470,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
                   <td className="p-4">
                     <input 
                       type="date" 
-                      value={o.createdDate || o.created_date || ''} 
+                      value={safeDateFormat(o.createdDate || o.created_date)} 
                       onChange={(e) => handleUpdateDates(o.id, 'createdDate', e.target.value)}
                       className="border border-gray-200 rounded px-2 py-1 text-xs"
                     />
@@ -438,7 +478,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
                   <td className="p-4">
                     <input 
                       type="date" 
-                      value={o.deliveredDate || o.delivered_date || ''} 
+                      value={safeDateFormat(o.deliveredDate || o.delivered_date)} 
                       onChange={(e) => handleUpdateDates(o.id, 'deliveredDate', e.target.value)}
                       className="border border-gray-200 rounded px-2 py-1 text-xs"
                     />
@@ -476,7 +516,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
         </table>
       </div>
 
-      {/* MODAL CHỈNH SỬA CHI TIẾT ĐƠN HÀNG (Hỗ trợ cuộn trên Mobile) */}
+      {/* MODAL CHỈNH SỬA CHI TIẾT ĐƠN HÀNG */}
       {editingOrder && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-3 sm:p-4 z-50">
           <div className="bg-white rounded-xl max-w-md w-full p-5 sm:p-6 shadow-xl relative max-h-[90vh] overflow-y-auto">
@@ -528,7 +568,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
                   <input 
                     type="number" 
                     value={editFormData.quantity || 1} 
-                    onChange={(e) => setEditFormData({ ...editFormData, quantity: Number(e.target.value) })}
+                    onChange={(e) => setEditFormData({ ...editFormData, quantity: e.target.value })}
                     className="w-full border p-2 rounded mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -537,7 +577,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
                   <input 
                     type="number" 
                     value={editFormData.sellingPrice ?? editFormData.selling_price ?? 0} 
-                    onChange={(e) => setEditFormData({ ...editFormData, sellingPrice: Number(e.target.value) })}
+                    onChange={(e) => setEditFormData({ ...editFormData, sellingPrice: e.target.value })}
                     className="w-full border p-2 rounded mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold text-blue-600"
                   />
                 </div>
@@ -548,7 +588,7 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
                 <input 
                   type="number" 
                   value={editFormData.amount || 0} 
-                  onChange={(e) => setEditFormData({ ...editFormData, amount: Number(e.target.value) })}
+                  onChange={(e) => setEditFormData({ ...editFormData, amount: e.target.value })}
                   className="w-full border p-2 rounded mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -557,15 +597,17 @@ export default function OrdersTab({ orders, onOpenCreateModal, onOpenReasonModal
             <div className="flex justify-end gap-2 mt-6">
               <button 
                 onClick={() => setEditingOrder(null)} 
+                disabled={isSubmitting}
                 className="px-4 py-2 text-xs border rounded hover:bg-gray-100 font-medium"
               >
                 Hủy
               </button>
               <button 
                 onClick={handleSaveEdit} 
-                className="px-4 py-2 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold"
+                disabled={isSubmitting}
+                className="px-4 py-2 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold disabled:opacity-50"
               >
-                Lưu Thay Đổi
+                {isSubmitting ? 'Đang lưu...' : 'Lưu Thay Đổi'}
               </button>
             </div>
           </div>
